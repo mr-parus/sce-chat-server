@@ -1,0 +1,17 @@
+# Logs
+npm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Coverage
+coverage
+
+# Transpiled files
+build/
+
+# JetBrains IDEs
+.idea/
+
+# Misc
+.DS_Store

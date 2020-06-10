@@ -1,0 +1,55 @@
+{
+  "name": "etee-chat-server",
+  "version": "0.0.0",
+  "description": "",
+  "license": "ISC",
+  "scripts": {
+    "prebuild": "npm run clean",
+    "build": "tsc",
+    "clean": "rimraf coverage build",
+    "test": "jest --coverage"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.json": [
+      "prettier --write --loglevel error"
+    ],
+    "*.{ts,tsx}": [
+      "prettier --write --loglevel error",
+      "eslint --quiet"
+    ],
+    "package.json": [
+      "sort-package-json"
+    ]
+  },
+  "dependencies": {
+    "convict": "^6.0.0",
+    "lodash": "^4.17.15",
+    "msgpack-lite": "^0.1.26",
+    "tslib": "^2.0.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/convict": "^5.2.1",
+    "@types/jest": "^25.2.2",
+    "@types/msgpack-lite": "^0.1.7",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-jest": "^23.13.1",
+    "husky": "^4.2.5",
+    "jest": "^26.0.1",
+    "lint-staged": "^10.2.9",
+    "prettier": "^2.0.2",
+    "rimraf": "^3.0.2",
+    "sort-package-json": "^1.44.0",
+    "ts-jest": "^26.0.0",
+    "typescript": "^3.9.2",
+    "wait-for-expect": "^3.0.2"
+  }
+}
