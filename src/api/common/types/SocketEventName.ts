@@ -1,5 +1,6 @@
 export enum SocketEventName {
     join = 'j',
-    joinResponse = 'jr',
+    joinResult = 'jr',
+
     newJoin = 'nj',
 }

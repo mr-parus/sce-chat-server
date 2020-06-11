@@ -4,20 +4,18 @@ import { Server } from '../../src/server/Server';
 
 import waitForExpect from 'wait-for-expect';
 import { config } from '../../src/config';
-import { getClientSocketConnection } from '../utils/getClientSocketConnection';
+import { getClientSocketConnection } from '../../src/utils/getClientSocketConnection';
 import { log } from '../../src/utils/logger';
 
 describe('Server', () => {
     let server: Server;
     let clientSocket: SocketIOClient.Socket;
 
-    // Setup WS & HTTP servers
     beforeAll(async () => {
-        server = new Server();
-        await server.listen(config.get('SERVER_PORT'));
+        server = Server.ofConfig(config);
+        await server.listen();
     });
 
-    // Cleanup WS & HTTP servers
     afterAll(async () => {
         await server.close();
     });

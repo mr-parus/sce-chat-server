@@ -1,4 +1,4 @@
-import { SocketEventName } from '../types/SocketEventName';
+import { SocketEventName } from '../../common/types/SocketEventName';
 import { joinChat } from './joinChat';
 
 export const socketEventHandlers = {

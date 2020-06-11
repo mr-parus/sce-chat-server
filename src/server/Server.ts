@@ -7,16 +7,23 @@ import { AddressInfo } from 'net';
 import { promisify } from 'util';
 
 import { log } from '../utils/logger';
-import { SocketEventHandler } from '../api_socket/types/SocketEventHandler';
-import { SocketEventName } from '../api_socket/types/SocketEventName';
+import { SocketEventHandler } from '../api/common/types/SocketEventHandler';
+import { SocketEventName } from '../api/common/types/SocketEventName';
+import { Config } from 'convict';
+import { ConfigSchema } from '../config';
+import { SocketContext } from '../api/common/types/SocketContext';
 
 export class Server {
+    private _socketEventHandlers: { [key in SocketEventName]?: SocketEventHandler } = {};
     private readonly _app: Koa;
     private readonly _io: SocketIO.Server;
     private readonly _server: http.Server;
-    private _socketEventHandlers: { [key in SocketEventName]?: SocketEventHandler } = {};
+    private readonly _socketContext: SocketContext = {
+        chatRoomId: 'cool_chat', // all new connections should be at the same room
+        onlineUsers: new Map(),
+    };
 
-    constructor() {
+    constructor(public readonly serverPort: number) {
         this._app = Server.createApp();
 
         this._server = Server.createHTTPServer();
@@ -36,6 +43,11 @@ export class Server {
     }
 
     //
+
+    static ofConfig(config: Config<ConfigSchema>): Server {
+        const serverPort = config.get('SERVER_PORT');
+        return new Server(serverPort);
+    }
 
     static createApp(): Koa {
         const app = new Koa();
@@ -66,11 +78,6 @@ export class Server {
     public initSocket(): void {
         if (!Object.keys(this._socketEventHandlers).length) log.warn('No socket event handlers provided!');
 
-        const socketContext = {
-            // all new connections should be at the same room.
-            chatRoomId: 'cool_chat',
-        };
-
         this._io.on('connect', (socket) => {
             log.silly('New socket connection! (id=%s)', socket.id);
 
@@ -89,21 +96,18 @@ export class Server {
                 }
 
                 // todo: add eventPayload validations
-
-                try {
-                    handler(this._io, socket, eventPayload, socketContext);
-                } catch (err) {
+                handler(this._io, socket, eventPayload, this._socketContext).catch((err) => {
                     log.error(`Error while handling socket event "%s": %s`, eventName, err);
-                }
+                });
             });
         });
     }
 
     //
 
-    public async listen(serverPort: number): Promise<void> {
-        await promisify(this._server.listen.bind(this._server))(serverPort);
-        log.debug(`Server run at port: '%d'`, serverPort);
+    public async listen(): Promise<void> {
+        await promisify(this._server.listen.bind(this._server))(this.serverPort);
+        log.debug(`Server run at port: '%d'`, this.serverPort);
     }
 
     public async close(): Promise<void> {
