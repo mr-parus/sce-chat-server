@@ -7,7 +7,7 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "clean": "rimraf coverage build",
-    "test": "LOGS_LEVEL=error NODE_ENV=test jest -i"
+    "test": "LOGS_LEVEL=error NODE_ENV=test jest --runInBand --detectOpenHandles"
   },
   "husky": {
     "hooks": {
@@ -33,12 +33,14 @@
     "koa": "^2.12.0",
     "koa-logger": "^3.2.1",
     "lodash": "^4.17.15",
+    "mongoose": "^5.9.18",
     "msgpack-lite": "^0.1.26",
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
     "socketio-wildcard": "^2.0.0",
     "tslib": "^2.0.0",
     "uuid": "^8.1.0",
+    "wait-port": "^0.2.9",
     "winston": "^3.2.1"
   },
   "devDependencies": {
@@ -46,6 +48,8 @@
     "@types/convict": "^5.2.1",
     "@types/jest": "^25.2.2",
     "@types/koa__cors": "^3.0.1",
+    "@types/lodash": "^4.14.155",
+    "@types/mongoose": "^5.7.24",
     "@types/msgpack-lite": "^0.1.7",
     "@types/socket.io": "^2.1.8",
     "@types/socket.io-client": "^1.4.33",
