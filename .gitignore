@@ -13,5 +13,8 @@ build/
 # JetBrains IDEs
 .idea/
 
+# Sensetive configs
+src/config/test.env
+
 # Misc
 .DS_Store

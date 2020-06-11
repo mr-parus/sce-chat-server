@@ -1,7 +1,11 @@
 import SocketIOClient from 'socket.io-client';
-import { Server } from '../src/server/Server';
+
+import { Server } from '../../src/server/Server';
+
 import waitForExpect from 'wait-for-expect';
-import { config } from '../src/config';
+import { config } from '../../src/config';
+import { getClientSocketConnection } from '../utils/getClientSocketConnection';
+import { log } from '../../src/utils/logger';
 
 describe('Server', () => {
     let server: Server;
@@ -18,14 +22,13 @@ describe('Server', () => {
         await server.close();
     });
 
-    beforeEach((done) => {
-        const { address, port } = server.address;
-        clientSocket = SocketIOClient.connect(`http://[${address}]:${port}`, { reconnectionDelay: 0, forceNew: true });
-        clientSocket.on('connect', done);
+    beforeEach(async () => {
+        clientSocket = await getClientSocketConnection(server.address);
     });
 
     afterEach(() => {
-        if (clientSocket.connected) clientSocket.disconnect();
+        jest.clearAllMocks();
+        if (clientSocket && clientSocket.connected) clientSocket.disconnect();
     });
 
     describe('Socket', () => {
@@ -33,10 +36,15 @@ describe('Server', () => {
             it('should disconnect clients who send nonexistent events', async () => {
                 expect(clientSocket.connected).toEqual(true);
 
+                // for checking that unexpected behaviour has logged
+                const mockLogError = jest.fn();
+                log.error = mockLogError;
+
                 clientSocket.emit('Hello', 'World');
 
                 await waitForExpect(() => {
                     expect(clientSocket.connected).toEqual(false);
+                    expect(mockLogError.mock.calls[0][0]).toContain('Unexpected event');
                 });
             });
         });

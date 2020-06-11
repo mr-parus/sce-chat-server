@@ -7,11 +7,11 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "clean": "rimraf coverage build",
-    "test": "jest --coverage"
+    "test": "LOGS_LEVEL=error NODE_ENV=test jest -i"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "npm run test && lint-staged"
     }
   },
   "lint-staged": {
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "convict": "^6.0.0",
+    "dotenv": "^8.2.0",
     "kcors": "^2.2.2",
     "koa": "^2.12.0",
     "koa-logger": "^3.2.1",
@@ -37,6 +38,7 @@
     "socket.io-client": "^2.3.0",
     "socketio-wildcard": "^2.0.0",
     "tslib": "^2.0.0",
+    "uuid": "^8.1.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
@@ -48,6 +50,7 @@
     "@types/socket.io": "^2.1.8",
     "@types/socket.io-client": "^1.4.33",
     "@types/socketio-wildcard": "^2.0.3",
+    "@types/uuid": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^2.33.0",
     "@typescript-eslint/parser": "^2.33.0",
     "eslint": "^6.8.0",

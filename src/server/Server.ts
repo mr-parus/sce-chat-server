@@ -7,14 +7,14 @@ import { AddressInfo } from 'net';
 import { promisify } from 'util';
 
 import { log } from '../utils/logger';
-import { SocketEventType } from '../api_socket/types/SocketEventType';
-import { SocketMessageBody } from '../api_socket/types/SocketMessageBody';
+import { SocketEventHandler } from '../api_socket/types/SocketEventHandler';
+import { SocketEventName } from '../api_socket/types/SocketEventName';
 
 export class Server {
     private readonly _app: Koa;
     private readonly _io: SocketIO.Server;
     private readonly _server: http.Server;
-    private _eventHandlers: { [key in SocketEventType]?: (data: SocketMessageBody) => void } = {};
+    private _socketEventHandlers: { [key in SocketEventName]?: SocketEventHandler } = {};
 
     constructor() {
         this._app = Server.createApp();
@@ -31,8 +31,8 @@ export class Server {
         return this._server.address() as AddressInfo;
     }
 
-    set eventHandlers(eventHandlers: { [key in SocketEventType]?: (data: SocketMessageBody) => void }) {
-        this._eventHandlers = Object.freeze(eventHandlers);
+    set socketEventHandlers(eventHandlers: { [key in SocketEventName]?: SocketEventHandler }) {
+        this._socketEventHandlers = Object.freeze(eventHandlers);
     }
 
     //
@@ -64,14 +64,19 @@ export class Server {
     //
 
     public initSocket(): void {
-        if (!Object.keys(this._eventHandlers).length) log.warn('No socket event handlers provided!');
+        if (!Object.keys(this._socketEventHandlers).length) log.warn('No socket event handlers provided!');
+
+        const socketContext = {
+            // all new connections should be at the same room.
+            chatRoomId: 'cool_chat',
+        };
 
         this._io.on('connect', (socket) => {
             log.silly('New socket connection! (id=%s)', socket.id);
 
             socket.on('*', (packet) => {
                 const [eventName, eventPayload] = packet.data;
-                const handler = this._eventHandlers[eventName as SocketEventType];
+                const handler: SocketEventHandler | undefined = this._socketEventHandlers[eventName as SocketEventName];
 
                 if (!handler) {
                     // Let's consider all events which do not meet our schema as 'suspicious'.
@@ -86,7 +91,7 @@ export class Server {
                 // todo: add eventPayload validations
 
                 try {
-                    handler(eventPayload);
+                    handler(this._io, socket, eventPayload, socketContext);
                 } catch (err) {
                     log.error(`Error while handling socket event "%s": %s`, eventName, err);
                 }
@@ -102,8 +107,8 @@ export class Server {
     }
 
     public async close(): Promise<void> {
+        log.debug('Server closed!');
         await promisify(this._io.close.bind(this._io))();
         await promisify(this._server.close.bind(this._server))();
-        log.debug('Server closed!');
     }
 }
