@@ -1,0 +1,1 @@
+[![codecov](https://codecov.io/gh/mr-parus/etee-chat-server/branch/master/graph/badge.svg?token=R90VRBWZPF)](https://codecov.io/gh/mr-parus/etee-chat-server)
