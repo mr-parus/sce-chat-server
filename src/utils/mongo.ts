@@ -23,7 +23,6 @@ export const connect = async (): Promise<mongoose.Mongoose> => {
             autoIndex: true,
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            reconnectTries: 5,
         });
 
         log.info(`Connected to MongoDB: ${connectURI}`);

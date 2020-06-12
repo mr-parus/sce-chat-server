@@ -1,7 +1,7 @@
-import { Dialog } from '../../common/types/Dialog';
+import { IDialog } from '../../common/types/IDialog';
 import { SocketContext } from '../../common/types/SocketContext';
 
-export const getDialogs = async (requesterUsername: string, socketContext: SocketContext): Promise<Dialog[]> => {
+export const getOnlineDialogs = async (requesterUsername: string, socketContext: SocketContext): Promise<IDialog[]> => {
     const onlineUserNames = [...socketContext.onlineUsers.keys()];
 
     return onlineUserNames

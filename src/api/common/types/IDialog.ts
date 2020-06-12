@@ -1,4 +1,4 @@
-export type Dialog = {
+export interface IDialog {
     unread: number;
     from: string;
-};
+}
