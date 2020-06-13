@@ -58,9 +58,12 @@ describe('joinChat (socket event handler)', () => {
         // wait for event
         const done = jest.fn();
         targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
-            const [errorMessage] = eventBody;
+            const [errorMessage, connectedUser] = eventBody;
 
-            expect(errorMessage).toBeFalsy();
+            expect(errorMessage).toBe(0);
+            if (!connectedUser) throw new Error('User is not present!');
+            expect(connectedUser.username).toBe(targetUsername);
+            expect(typeof connectedUser.id).toBe('string');
             done();
         });
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
@@ -142,8 +145,8 @@ describe('joinChat (socket event handler)', () => {
             [anotherUsername + '2']: 0,
         };
         targetClient.on(SocketEventName.newJoin, (eventBody: NewJoinResponseEventBody) => {
-            const [joinedUserName] = eventBody;
-            newUsers[joinedUserName] = 1;
+            const [newUser] = eventBody;
+            newUsers[newUser.username] = 1;
         });
         await waitForExpect(() => {
             expect(newUsers).toEqual({
@@ -156,7 +159,7 @@ describe('joinChat (socket event handler)', () => {
         await Promise.all(anotherClients.map((client) => client.disconnect()));
     });
 
-    it('should return all active users in the room', async () => {
+    it('should return all online users in the room', async () => {
         expect(targetClient.connected).toEqual(true);
 
         // another user joins the chat
@@ -169,13 +172,11 @@ describe('joinChat (socket event handler)', () => {
         // wait for event
         const done = jest.fn();
         targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
-            const [errorMessage, dialogs] = eventBody;
-
-            if (!dialogs) throw new Error('Dialogs are empty!');
-            expect(dialogs.length).toBe(1);
-            expect(dialogs[0].unread).toBe(0);
-            expect(dialogs[0].from).toBe(anotherUsername);
-            expect(errorMessage).toBeFalsy();
+            const [errorMessage, , onlineUsers] = eventBody;
+            if (!onlineUsers) throw new Error('onlineUsers should be defined!');
+            expect(onlineUsers.length).toBe(1);
+            expect(onlineUsers[0].username).toBe(anotherUsername);
+            expect(errorMessage).toBe(0);
             done();
         });
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
@@ -196,8 +197,8 @@ describe('joinChat (socket event handler)', () => {
 
         // wait for event
         targetClient.on(SocketEventName.disconnect, (eventBody: DisconnectEventBody) => {
-            const [disconnectedUsername] = eventBody;
-            expect(disconnectedUsername).toBe(anotherUsername);
+            const [disconnectedUser] = eventBody;
+            expect(disconnectedUser.username).toBe(anotherUsername);
             done();
         });
         await anotherClient.disconnect();

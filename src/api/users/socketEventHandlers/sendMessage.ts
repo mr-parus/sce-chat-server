@@ -1,6 +1,10 @@
 import { SocketEventHandler } from '../../common/types/SocketEventHandler';
 import { SocketEventName } from '../../common/types/SocketEventName';
-import { SendMessageEventBody } from '../../common/types/SocketEventBody';
+import {
+    ReceiveMessageEventBody,
+    SendMessageEventBody,
+    SendMessageResultEventBody,
+} from '../../common/types/SocketEventBody';
 import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
 import { log } from '../../../utils/logger';
 import { saveMessage } from '../../messages/services/saveMessage';
@@ -19,10 +23,10 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
     try {
         await saveMessage(message);
         // respond about receiving the message
-        socket.emit(SocketEventName.sendMessageResult, [0]);
+        socket.emit(SocketEventName.sendMessageResult, [0] as SendMessageResultEventBody);
     } catch (error) {
         if (error instanceof WrongArgumentError) {
-            socket.emit(SocketEventName.sendMessageResult, [error.reason]);
+            socket.emit(SocketEventName.sendMessageResult, [error.reason] as SendMessageResultEventBody);
             return;
         }
 
@@ -33,6 +37,6 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
     // send the message to the receiver
     const receiver = context.onlineUsers.get(message.to);
     if (receiver && receiver.socket.connected) {
-        receiver.socket.emit(SocketEventName.receiveMessage, [message]);
+        receiver.socket.emit(SocketEventName.receiveMessage, [message] as ReceiveMessageEventBody);
     }
 };

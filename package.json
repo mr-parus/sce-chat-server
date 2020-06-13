@@ -7,7 +7,7 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "clean": "rimraf coverage build",
-    "test": "LOGS_LEVEL=error NODE_ENV=test jest --runInBand --coverage"
+    "test": "LOGS_LEVEL=error NODE_ENV=test jest --runInBand --force-exit"
   },
   "husky": {
     "hooks": {

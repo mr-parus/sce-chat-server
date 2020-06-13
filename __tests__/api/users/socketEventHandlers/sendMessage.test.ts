@@ -110,9 +110,9 @@ describe('sendMessage (socket event handler)', () => {
         targetClient.emit(SocketEventName.sendMessage, [message]);
 
         // wait for event
-        targetClient.on(SocketEventName.sendMessageResult, (eventBody: ReceiveMessageEventBody) => {
+        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
             const [errorMessage] = eventBody;
-            expect(errorMessage).toBeFalsy();
+            expect(errorMessage).toBe(0);
             done();
         });
         done.mockReset();

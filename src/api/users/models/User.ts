@@ -1,5 +1,10 @@
 import _ from 'lodash';
-import mongoose from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose';
+import { IUser } from '../../common/types/IUser';
+
+export interface UserDocument extends Document {
+    username: IUser['username'];
+}
 
 const schema = new mongoose.Schema({
     username: {
@@ -12,9 +17,9 @@ const schema = new mongoose.Schema({
     },
 });
 
-schema.set('toJSON', {
+schema.set('toObject', {
     transform: (doc, ret) => ({ ..._.omit(ret, ['__v', '_id']), id: ret._id.toString() }),
 });
 
 export const collectionName = process.env.NODE_ENV === 'test' ? 'users.test' : 'users';
-export const User = mongoose.model(collectionName, schema);
+export const User: Model<UserDocument> = mongoose.model(collectionName, schema);

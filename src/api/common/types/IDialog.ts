@@ -1,4 +1,4 @@
 export interface IDialog {
     unread: number;
-    from: string;
+    from: string; // from whom messages
 }
