@@ -26,7 +26,7 @@ describe('Server', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
-        if (clientSocket && clientSocket.connected) clientSocket.disconnect();
+        if (clientSocket?.connected) clientSocket.disconnect();
     });
 
     describe('Socket', () => {

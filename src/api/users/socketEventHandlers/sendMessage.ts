@@ -9,6 +9,7 @@ import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
 import { log } from '../../../utils/logger';
 import { saveMessage } from '../../messages/services/saveMessage';
 import { TokenEncoder } from '../../../utils/TokenEncoder';
+import { InvalidJWTTokenError } from '../../common/errors/InvalidJWTTokenError';
 
 export const sendMessage: SocketEventHandler = async (io, socket, eventBody, context) => {
     try {
@@ -32,12 +33,17 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
 
         // send the message to the receiver
         const receiverSocket = context.onlineUser2Socket.get(message.to);
-        if (receiverSocket && receiverSocket.connected) {
+        if (receiverSocket?.connected) {
             receiverSocket.emit(SocketEventName.receiveMessage, [message] as ReceiveMessageEventBody);
         }
     } catch (error) {
         if (error instanceof WrongArgumentError) {
             socket.emit(SocketEventName.sendMessageResult, [error.reason] as SendMessageResultEventBody);
+            return;
+        }
+
+        if (error instanceof InvalidJWTTokenError) {
+            socket.emit(SocketEventName.sendMessageResult, ['Not authorised!'] as SendMessageResultEventBody);
             return;
         }
 

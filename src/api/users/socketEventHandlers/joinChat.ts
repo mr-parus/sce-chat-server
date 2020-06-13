@@ -10,21 +10,36 @@ import { saveUserIfNotExists } from '../services/saveUserIfNotExists';
 import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
 import { log } from '../../../utils/logger';
 import { TokenEncoder } from '../../../utils/TokenEncoder';
+import { findUSerById } from '../services/findUserById';
+import { IUser } from '../../common/types/IUser';
 
 export const joinChat: SocketEventHandler = async (io, socket, eventBody, context) => {
     try {
-        const [username] = eventBody as JoinEventBody;
+        const [providedUsername, providedToken] = eventBody as JoinEventBody;
         const { chatRoomId } = context;
 
+        // retrieve user from token if provided
+        let restoredUser: IUser | null = null;
+        if (!providedUsername && providedToken) {
+            const userId = await TokenEncoder.decode(providedToken);
+            restoredUser = (await findUSerById(userId)) as IUser;
+
+            if (!restoredUser) {
+                socket.emit(SocketEventName.joinResult, ['Bad token!']);
+                return;
+            }
+        }
+
         // verify if there is no online users with the same username
+        const username = restoredUser?.username || (providedUsername as string);
         if (context.onlineUserNames.get(username)) {
             socket.emit(SocketEventName.joinResult, ['A user with such username is already in the chat!']);
             return;
         }
 
         // store user data and mark his as 'online'
+        const user = restoredUser || (await saveUserIfNotExists({ username }));
         const onlineUsers = [...context.onlineUsers.values()];
-        const user = await saveUserIfNotExists({ username });
         context.onlineUser2Socket.set(user.id, socket);
         context.onlineUserNames.set(user.username, 1);
         context.onlineUsers.set(user.id, user);
@@ -57,7 +72,7 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
         }
 
         log.error(error);
-        if (socket && socket.connected) {
+        if (socket?.connected) {
             socket.emit(SocketEventName.sendMessageResult, ['Unexpected error.']);
         }
     }

@@ -20,7 +20,7 @@ export const saveMessage = async (messageParams: IMessage): Promise<object> => {
         throw new WrongArgumentError('messageParams.to', to, 'There is not such user in the system!');
     }
 
-    if (!(text && text.length)) {
+    if (!text?.length) {
         throw new WrongArgumentError('messageParams.text', text, 'Invalid message text!');
     }
 

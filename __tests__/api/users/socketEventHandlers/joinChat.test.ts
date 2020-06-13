@@ -15,6 +15,8 @@ import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
 import mongoose from 'mongoose';
 import { User } from '../../../../src/api/users/models/User';
 import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
+import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
+import { IUser } from '../../../../src/api/common/types/IUser';
 
 describe('joinChat (socket event handler)', () => {
     let server: Server;
@@ -23,8 +25,11 @@ describe('joinChat (socket event handler)', () => {
     let targetClient: SocketIOClient.Socket;
     let anotherClient: SocketIOClient.Socket;
 
+    let targetUser: IUser;
     const targetUsername = 'Bob';
     const anotherUsername = 'Alice';
+
+    let token: string;
 
     beforeAll(async () => {
         mongoConnection = await connectToMongoDB();
@@ -32,6 +37,9 @@ describe('joinChat (socket event handler)', () => {
         server = Server.ofConfig(config);
         server.socketEventHandlers = socketEventHandlers;
         await server.listen();
+
+        targetUser = await saveUserIfNotExists({ username: targetUsername });
+        token = await TokenEncoder.encode(targetUser.id);
     });
 
     afterAll(async () => {
@@ -45,8 +53,8 @@ describe('joinChat (socket event handler)', () => {
     });
 
     afterEach(async () => {
-        if (targetClient && targetClient.connected) await targetClient.disconnect();
-        if (anotherClient && anotherClient.connected) await anotherClient.disconnect();
+        if (targetClient?.connected) await targetClient.disconnect();
+        if (anotherClient?.connected) await anotherClient.disconnect();
     });
 
     it('should join new user to chat', async () => {
@@ -54,6 +62,26 @@ describe('joinChat (socket event handler)', () => {
 
         // target user joins the chat
         targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+
+        // wait for event
+        const done = jest.fn();
+        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+            const [errorMessage, connectedUser] = eventBody;
+
+            expect(errorMessage).toBe(0);
+            if (!connectedUser) throw new Error('User is not present!');
+            expect(connectedUser.username).toBe(targetUsername);
+            expect(typeof connectedUser.id).toBe('string');
+            done();
+        });
+        await waitForExpect(() => expect(done).toBeCalledTimes(1));
+    });
+
+    it('should join with a JWT token', async () => {
+        expect(targetClient.connected).toEqual(true);
+
+        // target user joins the chat
+        targetClient.emit(SocketEventName.join, [null, token] as JoinEventBody);
 
         // wait for event
         const done = jest.fn();

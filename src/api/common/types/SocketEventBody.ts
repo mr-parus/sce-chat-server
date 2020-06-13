@@ -6,8 +6,10 @@ type Token = string;
 type OnlineUsers = IUser[];
 
 // incoming messages
-export type JoinEventBody = [IUser['username']];
-export type SendMessageEventBody = [IMessage, Token?];
+export type JoinByUsernameEventBody = [IUser['username']];
+export type JoinByTokenEventBody = [null, Token];
+export type JoinEventBody = JoinByTokenEventBody | JoinByUsernameEventBody;
+export type SendMessageEventBody = [IMessage, Token];
 export type SocketEventBody = JoinEventBody | SendMessageEventBody;
 
 // outgoing messages

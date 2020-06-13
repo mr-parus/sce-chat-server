@@ -66,8 +66,8 @@ describe('sendMessage (socket event handler)', () => {
     });
 
     afterEach(async () => {
-        if (targetClient && targetClient.connected) await targetClient.disconnect();
-        if (anotherClient && anotherClient.connected) await anotherClient.disconnect();
+        if (targetClient?.connected) await targetClient.disconnect();
+        if (anotherClient?.connected) await anotherClient.disconnect();
     });
 
     it('should deny messages from unauthorised users', async () => {
@@ -75,7 +75,7 @@ describe('sendMessage (socket event handler)', () => {
 
         // target user sends the message
         const done = jest.fn();
-        targetClient.emit(SocketEventName.sendMessage, [message] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [message, 'bad token'] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
