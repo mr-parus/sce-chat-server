@@ -1,4 +1,5 @@
 import waitForExpect from 'wait-for-expect';
+import mongoose from 'mongoose';
 
 import { Server } from '../../../../src/server/Server';
 import SocketIOClient from 'socket.io-client';
@@ -7,10 +8,17 @@ import { SocketEventName } from '../../../../src/api/common/types/SocketEventNam
 import { socketEventHandlers } from '../../../../src/api/users/socketEventHandlers';
 import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
-import mongoose from 'mongoose';
 import { User } from '../../../../src/api/users/models/User';
+import {
+    JoinResultEventBody,
+    ReceiveMessageEventBody,
+    SendMessageEventBody,
+    SendMessageResultEventBody,
+} from '../../../../src/api/common/types/SocketEventBody';
+import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
 import { IMessage } from '../../../../src/api/common/types/IMessage';
-import { ReceiveMessageEventBody, SendMessageResultEventBody } from '../../../../src/api/common/types/SocketEventBody';
+import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
+import { IUser } from '../../../../src/api/common/types/IUser';
 
 describe('sendMessage (socket event handler)', () => {
     let server: Server;
@@ -19,32 +27,42 @@ describe('sendMessage (socket event handler)', () => {
     let targetClient: SocketIOClient.Socket;
     let anotherClient: SocketIOClient.Socket;
 
+    let user1: IUser, user2: IUser;
     const targetUsername = 'Bob';
     const anotherUsername = 'Alice';
 
-    const message: IMessage = {
-        from: targetUsername,
-        to: anotherUsername,
-        sentAt: Date.now(),
-        text: `Hi ${anotherUsername}!`,
-    };
+    let message: IMessage;
+    let token: string;
 
     beforeAll(async () => {
         mongoConnection = await connectToMongoDB();
-
         server = Server.ofConfig(config);
         server.socketEventHandlers = socketEventHandlers;
         await server.listen();
+
+        [user1, user2] = await Promise.all([
+            saveUserIfNotExists({ username: targetUsername }),
+            saveUserIfNotExists({ username: anotherUsername }),
+        ]);
+
+        token = await TokenEncoder.encode(user1.id);
     });
 
     afterAll(async () => {
         await User.deleteMany({});
-        await mongoConnection.disconnect();
         await server.close();
+        await mongoConnection.disconnect();
     });
 
     beforeEach(async () => {
         targetClient = await getClientSocketConnection(server.address);
+
+        message = {
+            from: user1.id,
+            to: user2.id,
+            sentAt: Date.now(),
+            text: `Hi ${anotherUsername}!`,
+        };
     });
 
     afterEach(async () => {
@@ -52,17 +70,17 @@ describe('sendMessage (socket event handler)', () => {
         if (anotherClient && anotherClient.connected) await anotherClient.disconnect();
     });
 
-    it('should deny messages from users who are not in the chat', async () => {
+    it('should deny messages from unauthorised users', async () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user sends the message
         const done = jest.fn();
-        targetClient.emit(SocketEventName.sendMessage, [message]);
+        targetClient.emit(SocketEventName.sendMessage, [message] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
             const [errorMessage] = eventBody;
-            expect(errorMessage).toBe('Firstly you should join the chat!');
+            expect(errorMessage).toBe('Not authorised!');
             done();
         });
         done.mockReset();
@@ -72,14 +90,19 @@ describe('sendMessage (socket event handler)', () => {
     it('should deny messages to not existing users', async () => {
         expect(targetClient.connected).toEqual(true);
 
+        message.to = mongoose.Types.ObjectId().toHexString();
+
         // target user joins to the chat
         const done = jest.fn();
         targetClient.emit(SocketEventName.join, [targetUsername]);
-        targetClient.on(SocketEventName.joinResult, done);
+        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+            expect(eventBody[0]).toBeFalsy();
+            done();
+        });
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message]);
+        targetClient.emit(SocketEventName.sendMessage, [message, token] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
@@ -107,7 +130,7 @@ describe('sendMessage (socket event handler)', () => {
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message]);
+        targetClient.emit(SocketEventName.sendMessage, [message, token] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
@@ -137,7 +160,7 @@ describe('sendMessage (socket event handler)', () => {
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message]);
+        targetClient.emit(SocketEventName.sendMessage, [message, token]);
 
         // wait for event
         anotherClient.on(SocketEventName.receiveMessage, (eventBody: ReceiveMessageEventBody) => {

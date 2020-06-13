@@ -20,6 +20,8 @@ export class Server {
     private readonly _server: http.Server;
     private readonly _socketContext: SocketContext = {
         chatRoomId: 'cool_chat', // all new connections should be at the same room
+        onlineUser2Socket: new Map(),
+        onlineUserNames: new Map(),
         onlineUsers: new Map(),
     };
 

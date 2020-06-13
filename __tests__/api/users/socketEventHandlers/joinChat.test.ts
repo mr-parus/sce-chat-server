@@ -1,5 +1,4 @@
 import waitForExpect from 'wait-for-expect';
-
 import { Server } from '../../../../src/server/Server';
 import SocketIOClient from 'socket.io-client';
 import { config } from '../../../../src/config';
@@ -15,6 +14,7 @@ import { getClientSocketConnection } from '../../../../src/utils/getClientSocket
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
 import mongoose from 'mongoose';
 import { User } from '../../../../src/api/users/models/User';
+import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
 
 describe('joinChat (socket event handler)', () => {
     let server: Server;
@@ -65,6 +65,27 @@ describe('joinChat (socket event handler)', () => {
             expect(connectedUser.username).toBe(targetUsername);
             expect(typeof connectedUser.id).toBe('string');
             done();
+        });
+        await waitForExpect(() => expect(done).toBeCalledTimes(1));
+    });
+
+    it('should return JWT token', async () => {
+        expect(targetClient.connected).toEqual(true);
+
+        // target user joins the chat
+        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+
+        // wait for event
+        const done = jest.fn();
+        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+            const [, user, , token] = eventBody as JoinResultEventBody;
+            if (!user || !token) throw new Error('user or token is not defined!');
+
+            expect(typeof token).toBe('string');
+            return TokenEncoder.decode(token).then((id) => {
+                expect(id).toBe(user.id);
+                done();
+            });
         });
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
     });
@@ -163,14 +184,16 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // another user joins the chat
+        const done = jest.fn();
         const anotherClient = await getClientSocketConnection(server.address);
         anotherClient.emit(SocketEventName.join, [anotherUsername] as JoinEventBody);
+        anotherClient.on(SocketEventName.joinResult, done);
+        await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user joins the chat
         targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
 
         // wait for event
-        const done = jest.fn();
         targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
             const [errorMessage, , onlineUsers] = eventBody;
             if (!onlineUsers) throw new Error('onlineUsers should be defined!');
@@ -179,7 +202,9 @@ describe('joinChat (socket event handler)', () => {
             expect(errorMessage).toBe(0);
             done();
         });
+        done.mockReset();
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
+
         await anotherClient.disconnect();
     });
 

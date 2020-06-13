@@ -23,6 +23,11 @@ const configSchema = {
         env: 'DB_MONGO_PORT',
         format: 'nat',
     },
+    JWT_SECRET: {
+        default: null,
+        env: 'JWT_SECRET',
+        format: String,
+    },
     LOGS_LEVEL: {
         default: 'silly',
         env: 'LOGS_LEVEL',
@@ -33,20 +38,15 @@ const configSchema = {
         env: 'SERVER_PORT',
         format: 'nat',
     },
-    SESSION_SECRET: {
-        default: null,
-        env: 'SESSION_SECRET',
-        format: String,
-    },
 };
 
 export type ConfigSchema = {
     DB_MONGO_CONNECTION_URI: string;
     DB_MONGO_HOST: string;
     DB_MONGO_PORT: number;
+    JWT_SECRET: string;
     LOGS_LEVEL: string;
     SERVER_PORT: number;
-    SESSION_SECRET: string;
 };
 
 export const config = convict<ConfigSchema>(configSchema);

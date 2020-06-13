@@ -1,6 +1,8 @@
+import { IUser } from './IUser';
+
 export interface IMessage {
-    from: string;
-    to: string;
+    from: IUser['id'];
+    to: IUser['id'];
     text: string;
     sentAt: number;
 }
