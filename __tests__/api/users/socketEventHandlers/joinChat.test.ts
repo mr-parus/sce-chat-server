@@ -13,10 +13,10 @@ import {
 import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
 import mongoose from 'mongoose';
-import { User } from '../../../../src/api/users/models/User';
 import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
 import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
 import { IUser } from '../../../../src/api/common/types/IUser';
+import { clearDB } from '../../utils/db';
 
 describe('joinChat (socket event handler)', () => {
     let server: Server;
@@ -43,7 +43,7 @@ describe('joinChat (socket event handler)', () => {
     });
 
     afterAll(async () => {
-        await User.deleteMany({});
+        await clearDB();
         await mongoConnection.disconnect();
         await server.close();
     });

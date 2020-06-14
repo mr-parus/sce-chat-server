@@ -84,6 +84,7 @@ export class Server {
             log.silly('New socket connection! (id=%s)', socket.id);
 
             socket.on('*', (packet) => {
+                log.silly('Socket event: %s', JSON.stringify(packet));
                 const [eventName, eventPayload] = packet.data;
                 const handler: SocketEventHandler | undefined = this._socketEventHandlers[eventName as SocketEventName];
 

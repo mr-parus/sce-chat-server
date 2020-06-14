@@ -21,7 +21,8 @@ const schema = new mongoose.Schema({
     },
 });
 
-schema.set('toJSON', {
+schema.set('toObject', {
+    virtuals: true,
     transform: (doc, ret) => ({ ..._.omit(ret, ['__v', '_id']), id: ret._id.toString() }),
 });
 

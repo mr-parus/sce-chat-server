@@ -2,7 +2,14 @@ import { IUser } from './IUser';
 
 export interface IMessage {
     from: IUser['id'];
-    to: IUser['id'];
+    id: string;
+    sentAt: string;
     text: string;
-    sentAt: number;
+    to: IUser['id'];
+}
+
+export interface MessageParams {
+    from: IUser['id'];
+    text: string;
+    to: IUser['id'];
 }

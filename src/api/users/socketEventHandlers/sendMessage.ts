@@ -12,24 +12,34 @@ import { TokenEncoder } from '../../../utils/TokenEncoder';
 import { InvalidJWTTokenError } from '../../common/errors/InvalidJWTTokenError';
 
 export const sendMessage: SocketEventHandler = async (io, socket, eventBody, context) => {
+    const [providedMessage, token, confirmationHash] = eventBody as SendMessageEventBody;
     try {
-        const [message, token] = eventBody as SendMessageEventBody;
-
         if (!token) {
-            socket.emit(SocketEventName.sendMessageResult, ['Not authorised!'] as SendMessageResultEventBody);
+            socket.emit(SocketEventName.sendMessageResult, [
+                'Not authorised!',
+                confirmationHash,
+            ] as SendMessageResultEventBody);
             return;
         }
 
         const userId = await TokenEncoder.decode(token);
-        if (userId !== message.from) {
-            socket.emit(SocketEventName.sendMessageResult, ['Not authorised!'] as SendMessageResultEventBody);
+        if (userId !== providedMessage.from) {
+            socket.emit(SocketEventName.sendMessageResult, [
+                'Not authorised!',
+                confirmationHash,
+            ] as SendMessageResultEventBody);
             return;
         }
 
         // store message
-        await saveMessage(message);
+        const message = await saveMessage(providedMessage);
         // respond about receiving the message
-        socket.emit(SocketEventName.sendMessageResult, [0] as SendMessageResultEventBody);
+        socket.emit(SocketEventName.sendMessageResult, [
+            0,
+            confirmationHash,
+            message.id,
+            message.sentAt,
+        ] as SendMessageResultEventBody);
 
         // send the message to the receiver
         const receiverSocket = context.onlineUser2Socket.get(message.to);
@@ -38,12 +48,18 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
         }
     } catch (error) {
         if (error instanceof WrongArgumentError) {
-            socket.emit(SocketEventName.sendMessageResult, [error.reason] as SendMessageResultEventBody);
+            socket.emit(SocketEventName.sendMessageResult, [
+                error.reason,
+                confirmationHash,
+            ] as SendMessageResultEventBody);
             return;
         }
 
         if (error instanceof InvalidJWTTokenError) {
-            socket.emit(SocketEventName.sendMessageResult, ['Not authorised!'] as SendMessageResultEventBody);
+            socket.emit(SocketEventName.sendMessageResult, [
+                'Not authorised!',
+                confirmationHash,
+            ] as SendMessageResultEventBody);
             return;
         }
 

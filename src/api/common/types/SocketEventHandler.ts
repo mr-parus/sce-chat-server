@@ -1,10 +1,10 @@
 import SocketIO from 'socket.io';
-import { SocketEventBody } from './SocketEventBody';
+import { SocketIncomingEventBody } from './SocketEventBody';
 import { SocketContext } from './SocketContext';
 
 export type SocketEventHandler = (
     io: SocketIO.Server,
     socket: SocketIO.Socket,
-    eventBody: SocketEventBody,
+    eventBody: SocketIncomingEventBody,
     context: SocketContext
 ) => Promise<void>;

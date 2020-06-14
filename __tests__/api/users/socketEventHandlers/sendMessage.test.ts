@@ -1,5 +1,6 @@
 import waitForExpect from 'wait-for-expect';
 import mongoose from 'mongoose';
+import { v4 as uuidV4 } from 'uuid';
 
 import { Server } from '../../../../src/server/Server';
 import SocketIOClient from 'socket.io-client';
@@ -8,7 +9,6 @@ import { SocketEventName } from '../../../../src/api/common/types/SocketEventNam
 import { socketEventHandlers } from '../../../../src/api/users/socketEventHandlers';
 import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
-import { User } from '../../../../src/api/users/models/User';
 import {
     JoinResultEventBody,
     ReceiveMessageEventBody,
@@ -16,9 +16,10 @@ import {
     SendMessageResultEventBody,
 } from '../../../../src/api/common/types/SocketEventBody';
 import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
-import { IMessage } from '../../../../src/api/common/types/IMessage';
+import { MessageParams } from '../../../../src/api/common/types/IMessage';
 import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
 import { IUser } from '../../../../src/api/common/types/IUser';
+import { clearDB } from '../../utils/db';
 
 describe('sendMessage (socket event handler)', () => {
     let server: Server;
@@ -31,8 +32,9 @@ describe('sendMessage (socket event handler)', () => {
     const targetUsername = 'Bob';
     const anotherUsername = 'Alice';
 
-    let message: IMessage;
+    let message: MessageParams;
     let token: string;
+    let confirmationHash: string;
 
     beforeAll(async () => {
         mongoConnection = await connectToMongoDB();
@@ -49,7 +51,7 @@ describe('sendMessage (socket event handler)', () => {
     });
 
     afterAll(async () => {
-        await User.deleteMany({});
+        await clearDB();
         await server.close();
         await mongoConnection.disconnect();
     });
@@ -60,9 +62,10 @@ describe('sendMessage (socket event handler)', () => {
         message = {
             from: user1.id,
             to: user2.id,
-            sentAt: Date.now(),
             text: `Hi ${anotherUsername}!`,
         };
+
+        confirmationHash = uuidV4();
     });
 
     afterEach(async () => {
@@ -75,12 +78,17 @@ describe('sendMessage (socket event handler)', () => {
 
         // target user sends the message
         const done = jest.fn();
-        targetClient.emit(SocketEventName.sendMessage, [message, 'bad token'] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [
+            message,
+            'bad token',
+            confirmationHash,
+        ] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
-            const [errorMessage] = eventBody;
+            const [errorMessage, receivedConfirmationHash] = eventBody;
             expect(errorMessage).toBe('Not authorised!');
+            expect(confirmationHash).toEqual(receivedConfirmationHash);
             done();
         });
         done.mockReset();
@@ -102,12 +110,13 @@ describe('sendMessage (socket event handler)', () => {
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message, token] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
-            const [errorMessage] = eventBody;
+            const [errorMessage, receivedConfirmationHash] = eventBody;
             expect(errorMessage).toBe('There is not such user in the system!');
+            expect(confirmationHash).toEqual(receivedConfirmationHash);
             done();
         });
         done.mockReset();
@@ -130,12 +139,15 @@ describe('sendMessage (socket event handler)', () => {
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message, token] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SendMessageEventBody);
 
         // wait for event
         targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
-            const [errorMessage] = eventBody;
+            const [errorMessage, receivedConfirmationHash, receivedMessageId, receivedSentAt] = eventBody;
             expect(errorMessage).toBe(0);
+            expect(typeof receivedSentAt).toEqual('string');
+            expect(typeof receivedMessageId).toEqual('string');
+            expect(confirmationHash).toEqual(receivedConfirmationHash);
             done();
         });
         done.mockReset();
@@ -165,7 +177,11 @@ describe('sendMessage (socket event handler)', () => {
         // wait for event
         anotherClient.on(SocketEventName.receiveMessage, (eventBody: ReceiveMessageEventBody) => {
             const [receivedMessage] = eventBody;
-            expect(message).toEqual(receivedMessage);
+            expect(message.from).toEqual(receivedMessage.from);
+            expect(message.to).toEqual(receivedMessage.to);
+            expect(message.text).toEqual(receivedMessage.text);
+            expect(typeof receivedMessage.sentAt).toEqual('string');
+            expect(typeof receivedMessage.id).toEqual('string');
             done();
         });
         done.mockReset();
