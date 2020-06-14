@@ -1,6 +1,6 @@
-import convict from 'convict';
-import dotEnv from 'dotenv';
-import path from 'path';
+import convict from "convict";
+import dotEnv from "dotenv";
+import path from "path";
 
 if (process.env.NODE_ENV === 'test') {
     const { error } = dotEnv.config({ path: path.resolve(__dirname, './test.env') });
@@ -35,7 +35,7 @@ const configSchema = {
     },
     SERVER_PORT: {
         default: 3000,
-        env: 'SERVER_PORT',
+        env: 'PORT',
         format: 'nat',
     },
 };

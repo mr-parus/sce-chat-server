@@ -1,12 +1,12 @@
 {
-  "name": "etee-chat-server",
+  "name": "sce-chat-server",
   "version": "0.0.0",
   "description": "",
   "license": "ISC",
   "scripts": {
-    "prebuild": "npm run clean",
     "build": "tsc",
-    "clean": "rimraf coverage build",
+    "prestart": "npm run build",
+    "start": "node build/index.js",
     "test": "LOGS_LEVEL=error NODE_ENV=test jest --runInBand --force-exit"
   },
   "husky": {
@@ -40,6 +40,7 @@
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
     "socketio-wildcard": "^2.0.0",
+    "tsc": "^1.20150623.0",
     "tslib": "^2.0.0",
     "uuid": "^8.1.0",
     "wait-port": "^0.2.9",
@@ -67,12 +68,14 @@
     "husky": "^4.2.5",
     "jest": "^26.0.1",
     "lint-staged": "^10.2.9",
-    "p-queue": "^6.4.0",
-    "prettier": "^2.0.2",
-    "rimraf": "^3.0.2",
+    "prettier": "^2.0.5",
     "sort-package-json": "^1.44.0",
     "ts-jest": "^26.0.0",
     "typescript": "^3.9.2",
     "wait-for-expect": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=14.2.0",
+    "npm": ">=6.0.0"
   }
 }
