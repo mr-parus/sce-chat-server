@@ -3,8 +3,8 @@ import dotEnv from 'dotenv';
 import path from 'path';
 
 if (process.env.NODE_ENV === 'test') {
-    const result = dotEnv.config({ path: path.resolve(__dirname, './test.env') });
-    if (result.error) throw result.error;
+    const { error } = dotEnv.config({ path: path.resolve(__dirname, './test.env') });
+    if (error) throw error;
 }
 
 const configSchema = {

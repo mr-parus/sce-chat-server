@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import mongoose, { Document, Model } from 'mongoose';
 
-import { IUser } from '../../../common/types/IUser';
+import { IUser } from '../../common/types/IUser';
 
 export interface UserDocument extends Document {
     username: IUser['username'];

@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-import { IMessage } from '../../../common/types/IMessage';
+import { IMessage } from '../../common/types/IMessage';
 import { Message } from '../models/Message';
 import { User } from '../../users/models/User';
-import { WrongArgumentError } from '../../../common/errors/WrongArgumentError';
+import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
 
 export const getStoredMessages = async (requesterUserID: string, targetUserId: string): Promise<IMessage[]> => {
     if (!(mongoose.Types.ObjectId.isValid(requesterUserID) && (await User.exists({ _id: requesterUserID })))) {

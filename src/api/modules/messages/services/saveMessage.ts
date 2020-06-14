@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-import { IMessage, MessageParams } from '../../../common/types/IMessage';
+import { IMessage, MessageParams } from '../../common/types/IMessage';
 import { Message } from '../models/Message';
 import { User } from '../../users/models/User';
-import { WrongArgumentError } from '../../../common/errors/WrongArgumentError';
+import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
 
 export const saveMessage = async (messageParams: MessageParams): Promise<IMessage> => {
     const { from, to, text } = messageParams;

@@ -1,11 +1,11 @@
-import * as SocketEvent from '../common/types/SocketEvent';
-import { getStoredMessages } from '../modules/messages/services/getStoredMessages';
-import { InvalidJWTTokenError } from '../common/errors/InvalidJWTTokenError';
-import { log } from '../../utils/logger';
-import { SocketEventHandler } from '../common/types/SocketEventHandler';
-import { SocketEventName } from '../common/types/SocketEventName';
-import { TokenEncoder } from '../../utils/TokenEncoder';
-import { WrongArgumentError } from '../common/errors/WrongArgumentError';
+import * as SocketEvent from '../../modules/common/types/SocketEvent';
+import { getStoredMessages } from '../../modules/messages/services/getStoredMessages';
+import { InvalidJWTTokenError } from '../../modules/common/errors/InvalidJWTTokenError';
+import { log } from '../../../utils/logger';
+import { SocketEventHandler } from '../../modules/common/types/SocketEventHandler';
+import { SocketEventName } from '../../modules/common/types/SocketEventName';
+import { TokenEncoder } from '../../../utils/TokenEncoder';
+import { WrongArgumentError } from '../../modules/common/errors/WrongArgumentError';
 
 export const getMessages: SocketEventHandler = async (io, socket, eventBody /*context*/) => {
     const [targetUserId, token] = eventBody as SocketEvent.GetMessages;

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
-import { IUser } from '../../../../common/types/IUser';
-import { WrongArgumentError } from '../../../../common/errors/WrongArgumentError';
+import { IUser } from '../../../common/types/IUser';
+import { WrongArgumentError } from '../../../common/errors/WrongArgumentError';
 
 export const createdUsers = new Map<string, IUser>();
 

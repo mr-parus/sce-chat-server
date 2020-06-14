@@ -1,11 +1,11 @@
-import * as SocketEvent from '../common/types/SocketEvent';
-import { InvalidJWTTokenError } from '../common/errors/InvalidJWTTokenError';
-import { log } from '../../utils/logger';
-import { saveMessage } from '../modules/messages/services/saveMessage';
-import { SocketEventHandler } from '../common/types/SocketEventHandler';
-import { SocketEventName } from '../common/types/SocketEventName';
-import { TokenEncoder } from '../../utils/TokenEncoder';
-import { WrongArgumentError } from '../common/errors/WrongArgumentError';
+import * as SocketEvent from '../../modules/common/types/SocketEvent';
+import { InvalidJWTTokenError } from '../../modules/common/errors/InvalidJWTTokenError';
+import { log } from '../../../utils/logger';
+import { saveMessage } from '../../modules/messages/services/saveMessage';
+import { SocketEventHandler } from '../../modules/common/types/SocketEventHandler';
+import { SocketEventName } from '../../modules/common/types/SocketEventName';
+import { TokenEncoder } from '../../../utils/TokenEncoder';
+import { WrongArgumentError } from '../../modules/common/errors/WrongArgumentError';
 
 export const sendMessage: SocketEventHandler = async (io, socket, eventBody, context) => {
     const [providedMessage, token, confirmationHash] = eventBody as SocketEvent.SendMessage;

@@ -2,17 +2,18 @@ import mongoose from 'mongoose';
 import SocketIOClient from 'socket.io-client';
 import waitForExpect from 'wait-for-expect';
 
-import * as SocketEvent from '../../../src/api/common/types/SocketEvent';
-import { clearDB } from '../utils/db';
-import { config } from '../../../src/config';
-import { connect as connectToMongoDB } from '../../../src/utils/mongo';
-import { getClientSocketConnection } from '../../../src/utils/getClientSocketConnection';
-import { IUser } from '../../../src/api/common/types/IUser';
-import { saveUserIfNotExists } from '../../../src/api/modules/users/services/saveUserIfNotExists';
-import { Server } from '../../../src/server/Server';
-import { socketEventHandlers } from '../../../src/api/socketEventHandlers';
-import { SocketEventName } from '../../../src/api/common/types/SocketEventName';
-import { TokenEncoder } from '../../../src/utils/TokenEncoder';
+import * as SocketEvent from '../../../../src/api/modules/common/types/SocketEvent';
+import { config } from '../../../../src/config';
+import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
+import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
+import { IUser } from '../../../../src/api/modules/common/types/IUser';
+import { Message } from '../../../../src/api/modules/messages/models/Message';
+import { saveUserIfNotExists } from '../../../../src/api/modules/users/services/saveUserIfNotExists';
+import { Server } from '../../../../src/server/Server';
+import { socketEventHandlers } from '../../../../src/api/socket/eventHandlers';
+import { SocketEventName } from '../../../../src/api/modules/common/types/SocketEventName';
+import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
+import { User } from '../../../../src/api/modules/users/models/User';
 
 describe('joinChat (socket event handler)', () => {
     let server: Server;
@@ -39,7 +40,7 @@ describe('joinChat (socket event handler)', () => {
     });
 
     afterAll(async () => {
-        await clearDB();
+        await Promise.all([User.deleteMany({}), Message.deleteMany({})]);
         await mongoConnection.disconnect();
         await server.close();
     });

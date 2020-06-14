@@ -1,12 +1,12 @@
-import { SocketEventHandler } from '../common/types/SocketEventHandler';
-import { SocketEventName } from '../common/types/SocketEventName';
-import * as SocketEvent from '../common/types/SocketEvent';
-import { saveUserIfNotExists } from '../modules/users/services/saveUserIfNotExists';
-import { WrongArgumentError } from '../common/errors/WrongArgumentError';
-import { log } from '../../utils/logger';
-import { TokenEncoder } from '../../utils/TokenEncoder';
-import { findUSerById } from '../modules/users/services/findUserById';
-import { IUser } from '../common/types/IUser';
+import { SocketEventHandler } from '../../modules/common/types/SocketEventHandler';
+import { SocketEventName } from '../../modules/common/types/SocketEventName';
+import * as SocketEvent from '../../modules/common/types/SocketEvent';
+import { saveUserIfNotExists } from '../../modules/users/services/saveUserIfNotExists';
+import { WrongArgumentError } from '../../modules/common/errors/WrongArgumentError';
+import { log } from '../../../utils/logger';
+import { TokenEncoder } from '../../../utils/TokenEncoder';
+import { findUSerById } from '../../modules/users/services/findUserById';
+import { IUser } from '../../modules/common/types/IUser';
 
 export const joinChat: SocketEventHandler = async (io, socket, eventBody, context) => {
     try {

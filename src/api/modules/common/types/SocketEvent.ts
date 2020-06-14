@@ -11,11 +11,13 @@ export type IncomingEvent = Join | SendMessage | GetMessages;
 export type Join = JoinByToken | JoinByUsername;
 export type JoinByToken = [null, Token];
 export type JoinByUsername = [IUser['username']];
+export type ReadDialog = [IUser['id'], Token];
 export type SendMessage = [MessageParams, Token, ConfirmationHash];
 
 // Outgoing messages
 export type Disconnect = [IUser];
 export type GetMessagesResult = [ErrorMessage] | [0, IUser['id'], IMessage[]];
+export type InterlocutorReadDialog = [IUser['id']];
 export type JoinResult = [0, IUser, IUser[] /*online users*/, Token] | [ErrorMessage];
 export type NewJoinResponse = [IUser];
 export type ReceiveMessage = [IMessage];

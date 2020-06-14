@@ -6,12 +6,12 @@ import SocketIO from 'socket.io';
 import { AddressInfo } from 'net';
 import { promisify } from 'util';
 
-import { log } from '../utils/logger';
-import { SocketEventHandler } from '../api/common/types/SocketEventHandler';
-import { SocketEventName } from '../api/common/types/SocketEventName';
 import { Config } from 'convict';
 import { ConfigSchema } from '../config';
-import { SocketContext } from '../api/common/types/SocketContext';
+import { log } from '../utils/logger';
+import { SocketContext } from '../api/modules/common/types/SocketContext';
+import { SocketEventHandler } from '../api/modules/common/types/SocketEventHandler';
+import { SocketEventName } from '../api/modules/common/types/SocketEventName';
 
 export class Server {
     private _socketEventHandlers: { [key in SocketEventName]?: SocketEventHandler } = {};
