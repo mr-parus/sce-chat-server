@@ -1,24 +1,20 @@
-import { SocketEventHandler } from '../../common/types/SocketEventHandler';
-import { SocketEventName } from '../../common/types/SocketEventName';
-import {
-    ReceiveMessageEventBody,
-    SendMessageEventBody,
-    SendMessageResultEventBody,
-} from '../../common/types/SocketEventBody';
-import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
-import { log } from '../../../utils/logger';
-import { saveMessage } from '../../messages/services/saveMessage';
-import { TokenEncoder } from '../../../utils/TokenEncoder';
-import { InvalidJWTTokenError } from '../../common/errors/InvalidJWTTokenError';
+import * as SocketEvent from '../common/types/SocketEvent';
+import { InvalidJWTTokenError } from '../common/errors/InvalidJWTTokenError';
+import { log } from '../../utils/logger';
+import { saveMessage } from '../modules/messages/services/saveMessage';
+import { SocketEventHandler } from '../common/types/SocketEventHandler';
+import { SocketEventName } from '../common/types/SocketEventName';
+import { TokenEncoder } from '../../utils/TokenEncoder';
+import { WrongArgumentError } from '../common/errors/WrongArgumentError';
 
 export const sendMessage: SocketEventHandler = async (io, socket, eventBody, context) => {
-    const [providedMessage, token, confirmationHash] = eventBody as SendMessageEventBody;
+    const [providedMessage, token, confirmationHash] = eventBody as SocketEvent.SendMessage;
     try {
         if (!token) {
             socket.emit(SocketEventName.sendMessageResult, [
                 'Not authorised!',
                 confirmationHash,
-            ] as SendMessageResultEventBody);
+            ] as SocketEvent.SendMessageResult);
             return;
         }
 
@@ -27,7 +23,7 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
             socket.emit(SocketEventName.sendMessageResult, [
                 'Not authorised!',
                 confirmationHash,
-            ] as SendMessageResultEventBody);
+            ] as SocketEvent.SendMessageResult);
             return;
         }
 
@@ -39,19 +35,19 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
             confirmationHash,
             message.id,
             message.sentAt,
-        ] as SendMessageResultEventBody);
+        ] as SocketEvent.SendMessageResult);
 
         // send the message to the receiver
         const receiverSocket = context.onlineUser2Socket.get(message.to);
         if (receiverSocket?.connected) {
-            receiverSocket.emit(SocketEventName.receiveMessage, [message] as ReceiveMessageEventBody);
+            receiverSocket.emit(SocketEventName.receiveMessage, [message] as SocketEvent.ReceiveMessage);
         }
     } catch (error) {
         if (error instanceof WrongArgumentError) {
             socket.emit(SocketEventName.sendMessageResult, [
                 error.reason,
                 confirmationHash,
-            ] as SendMessageResultEventBody);
+            ] as SocketEvent.SendMessageResult);
             return;
         }
 
@@ -59,7 +55,7 @@ export const sendMessage: SocketEventHandler = async (io, socket, eventBody, con
             socket.emit(SocketEventName.sendMessageResult, [
                 'Not authorised!',
                 confirmationHash,
-            ] as SendMessageResultEventBody);
+            ] as SocketEvent.SendMessageResult);
             return;
         }
 

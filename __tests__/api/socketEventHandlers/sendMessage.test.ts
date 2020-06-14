@@ -1,25 +1,20 @@
-import waitForExpect from 'wait-for-expect';
 import mongoose from 'mongoose';
+import SocketIOClient from 'socket.io-client';
+import waitForExpect from 'wait-for-expect';
 import { v4 as uuidV4 } from 'uuid';
 
-import { Server } from '../../../../src/server/Server';
-import SocketIOClient from 'socket.io-client';
-import { config } from '../../../../src/config';
-import { SocketEventName } from '../../../../src/api/common/types/SocketEventName';
-import { socketEventHandlers } from '../../../../src/api/users/socketEventHandlers';
-import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
-import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
-import {
-    JoinResultEventBody,
-    ReceiveMessageEventBody,
-    SendMessageEventBody,
-    SendMessageResultEventBody,
-} from '../../../../src/api/common/types/SocketEventBody';
-import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
-import { MessageParams } from '../../../../src/api/common/types/IMessage';
-import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
-import { IUser } from '../../../../src/api/common/types/IUser';
-import { clearDB } from '../../utils/db';
+import * as SocketEvent from '../../../src/api/common/types/SocketEvent';
+import { clearDB } from '../utils/db';
+import { config } from '../../../src/config';
+import { connect as connectToMongoDB } from '../../../src/utils/mongo';
+import { getClientSocketConnection } from '../../../src/utils/getClientSocketConnection';
+import { IUser } from '../../../src/api/common/types/IUser';
+import { MessageParams } from '../../../src/api/common/types/IMessage';
+import { saveUserIfNotExists } from '../../../src/api/modules/users/services/saveUserIfNotExists';
+import { Server } from '../../../src/server/Server';
+import { socketEventHandlers } from '../../../src/api/socketEventHandlers';
+import { SocketEventName } from '../../../src/api/common/types/SocketEventName';
+import { TokenEncoder } from '../../../src/utils/TokenEncoder';
 
 describe('sendMessage (socket event handler)', () => {
     let server: Server;
@@ -82,10 +77,10 @@ describe('sendMessage (socket event handler)', () => {
             message,
             'bad token',
             confirmationHash,
-        ] as SendMessageEventBody);
+        ] as SocketEvent.SendMessage);
 
         // wait for event
-        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
+        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SocketEvent.SendMessageResult) => {
             const [errorMessage, receivedConfirmationHash] = eventBody;
             expect(errorMessage).toBe('Not authorised!');
             expect(confirmationHash).toEqual(receivedConfirmationHash);
@@ -102,18 +97,18 @@ describe('sendMessage (socket event handler)', () => {
 
         // target user joins to the chat
         const done = jest.fn();
-        targetClient.emit(SocketEventName.join, [targetUsername]);
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             expect(eventBody[0]).toBeFalsy();
             done();
         });
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SocketEvent.SendMessage);
 
         // wait for event
-        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
+        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SocketEvent.SendMessageResult) => {
             const [errorMessage, receivedConfirmationHash] = eventBody;
             expect(errorMessage).toBe('There is not such user in the system!');
             expect(confirmationHash).toEqual(receivedConfirmationHash);
@@ -128,21 +123,21 @@ describe('sendMessage (socket event handler)', () => {
 
         // target user joins the chat
         const done = jest.fn();
-        targetClient.emit(SocketEventName.join, [targetUsername]);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
         targetClient.on(SocketEventName.joinResult, done);
 
         // another user joins the chat
         const anotherClient = await getClientSocketConnection(server.address);
-        anotherClient.emit(SocketEventName.join, [anotherUsername]);
+        anotherClient.emit(SocketEventName.join, [anotherUsername] as SocketEvent.Join);
         anotherClient.on(SocketEventName.joinResult, done);
 
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SendMessageEventBody);
+        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SocketEvent.SendMessage);
 
         // wait for event
-        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SendMessageResultEventBody) => {
+        targetClient.on(SocketEventName.sendMessageResult, (eventBody: SocketEvent.SendMessageResult) => {
             const [errorMessage, receivedConfirmationHash, receivedMessageId, receivedSentAt] = eventBody;
             expect(errorMessage).toBe(0);
             expect(typeof receivedSentAt).toEqual('string');
@@ -161,21 +156,21 @@ describe('sendMessage (socket event handler)', () => {
 
         // target user joins the chat
         const done = jest.fn();
-        targetClient.emit(SocketEventName.join, [targetUsername]);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
         targetClient.on(SocketEventName.joinResult, done);
 
         // another user joins the chat
         const anotherClient = await getClientSocketConnection(server.address);
-        anotherClient.emit(SocketEventName.join, [anotherUsername]);
+        anotherClient.emit(SocketEventName.join, [anotherUsername] as SocketEvent.Join);
         anotherClient.on(SocketEventName.joinResult, done);
 
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // target user sends the message
-        targetClient.emit(SocketEventName.sendMessage, [message, token]);
+        targetClient.emit(SocketEventName.sendMessage, [message, token, confirmationHash] as SocketEvent.SendMessage);
 
         // wait for event
-        anotherClient.on(SocketEventName.receiveMessage, (eventBody: ReceiveMessageEventBody) => {
+        anotherClient.on(SocketEventName.receiveMessage, (eventBody: SocketEvent.ReceiveMessage) => {
             const [receivedMessage] = eventBody;
             expect(message.from).toEqual(receivedMessage.from);
             expect(message.to).toEqual(receivedMessage.to);

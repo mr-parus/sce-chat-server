@@ -1,11 +1,10 @@
 import SocketIOClient from 'socket.io-client';
-
-import { Server } from '../../src/server/Server';
-
 import waitForExpect from 'wait-for-expect';
+
 import { config } from '../../src/config';
 import { getClientSocketConnection } from '../../src/utils/getClientSocketConnection';
 import { log } from '../../src/utils/logger';
+import { Server } from '../../src/server/Server';
 
 describe('Server', () => {
     let server: Server;

@@ -1,6 +1,6 @@
+import { IUser } from '../../../common/types/IUser';
 import { User } from '../models/User';
-import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
-import { IUser } from '../../common/types/IUser';
+import { WrongArgumentError } from '../../../common/errors/WrongArgumentError';
 
 export const saveUserIfNotExists = async ({ username }: { username: string }): Promise<IUser> => {
     username = username.trim();

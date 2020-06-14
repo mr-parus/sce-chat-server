@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
+import { IUser } from '../../../common/types/IUser';
 import { User } from '../models/User';
-import { IUser } from '../../common/types/IUser';
-import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
+import { WrongArgumentError } from '../../../common/errors/WrongArgumentError';
 
 export const findUSerById = async (id: string): Promise<IUser | null> => {
     if (!mongoose.Types.ObjectId.isValid(id)) {

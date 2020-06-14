@@ -1,22 +1,18 @@
-import waitForExpect from 'wait-for-expect';
-import { Server } from '../../../../src/server/Server';
-import SocketIOClient from 'socket.io-client';
-import { config } from '../../../../src/config';
-import { SocketEventName } from '../../../../src/api/common/types/SocketEventName';
-import { socketEventHandlers } from '../../../../src/api/users/socketEventHandlers';
-import {
-    DisconnectEventBody,
-    JoinEventBody,
-    JoinResultEventBody,
-    NewJoinResponseEventBody,
-} from '../../../../src/api/common/types/SocketEventBody';
-import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
-import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
 import mongoose from 'mongoose';
-import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
-import { saveUserIfNotExists } from '../../../../src/api/users/services/saveUserIfNotExists';
-import { IUser } from '../../../../src/api/common/types/IUser';
-import { clearDB } from '../../utils/db';
+import SocketIOClient from 'socket.io-client';
+import waitForExpect from 'wait-for-expect';
+
+import * as SocketEvent from '../../../src/api/common/types/SocketEvent';
+import { clearDB } from '../utils/db';
+import { config } from '../../../src/config';
+import { connect as connectToMongoDB } from '../../../src/utils/mongo';
+import { getClientSocketConnection } from '../../../src/utils/getClientSocketConnection';
+import { IUser } from '../../../src/api/common/types/IUser';
+import { saveUserIfNotExists } from '../../../src/api/modules/users/services/saveUserIfNotExists';
+import { Server } from '../../../src/server/Server';
+import { socketEventHandlers } from '../../../src/api/socketEventHandlers';
+import { SocketEventName } from '../../../src/api/common/types/SocketEventName';
+import { TokenEncoder } from '../../../src/utils/TokenEncoder';
 
 describe('joinChat (socket event handler)', () => {
     let server: Server;
@@ -61,11 +57,11 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage, connectedUser] = eventBody;
 
             expect(errorMessage).toBe(0);
@@ -81,11 +77,11 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, [null, token] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [null, token] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage, connectedUser] = eventBody;
 
             expect(errorMessage).toBe(0);
@@ -101,12 +97,12 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
-            const [, user, , token] = eventBody as JoinResultEventBody;
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
+            const [, user, , token] = eventBody as SocketEvent.JoinResult;
             if (!user || !token) throw new Error('user or token is not defined!');
 
             expect(typeof token).toBe('string');
@@ -122,11 +118,11 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, ['X'.repeat(21)] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, ['X'.repeat(21)] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage] = eventBody;
 
             expect(errorMessage).toBe('Username is too long');
@@ -139,11 +135,11 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, ['X'] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, ['X'] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage] = eventBody;
 
             expect(errorMessage).toBe('Username is too short');
@@ -157,14 +153,14 @@ describe('joinChat (socket event handler)', () => {
 
         // another user joins the chat
         const anotherClient = await getClientSocketConnection(server.address);
-        anotherClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        anotherClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // target user joins the chat with the same username
-        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // wait for event
         const done = jest.fn();
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage] = eventBody;
             expect(errorMessage).toContain('A user with such username is already in the chat!');
             done();
@@ -177,7 +173,7 @@ describe('joinChat (socket event handler)', () => {
         expect(targetClient.connected).toEqual(true);
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // another 3 users join the chat
         const anotherClients = await Promise.all([
@@ -185,7 +181,9 @@ describe('joinChat (socket event handler)', () => {
             getClientSocketConnection(server.address),
             getClientSocketConnection(server.address),
         ]);
-        anotherClients.forEach((client, i) => client.emit(SocketEventName.join, [anotherUsername + i]));
+        anotherClients.forEach((client, i) => {
+            client.emit(SocketEventName.join, [anotherUsername + i] as SocketEvent.Join);
+        });
 
         // wait for all events
         const newUsers = {
@@ -193,7 +191,7 @@ describe('joinChat (socket event handler)', () => {
             [anotherUsername + '1']: 0,
             [anotherUsername + '2']: 0,
         };
-        targetClient.on(SocketEventName.newJoin, (eventBody: NewJoinResponseEventBody) => {
+        targetClient.on(SocketEventName.newJoin, (eventBody: SocketEvent.NewJoinResponse) => {
             const [newUser] = eventBody;
             newUsers[newUser.username] = 1;
         });
@@ -214,15 +212,15 @@ describe('joinChat (socket event handler)', () => {
         // another user joins the chat
         const done = jest.fn();
         const anotherClient = await getClientSocketConnection(server.address);
-        anotherClient.emit(SocketEventName.join, [anotherUsername] as JoinEventBody);
+        anotherClient.emit(SocketEventName.join, [anotherUsername] as SocketEvent.Join);
         anotherClient.on(SocketEventName.joinResult, done);
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user joins the chat
-        targetClient.emit(SocketEventName.join, [targetUsername] as JoinEventBody);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // wait for event
-        targetClient.on(SocketEventName.joinResult, (eventBody: JoinResultEventBody) => {
+        targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage, , onlineUsers] = eventBody;
             if (!onlineUsers) throw new Error('onlineUsers should be defined!');
             expect(onlineUsers.length).toBe(1);
@@ -239,17 +237,17 @@ describe('joinChat (socket event handler)', () => {
     it('should notify if a user disconnected', async () => {
         // target user joins the chat
         const done = jest.fn();
-        targetClient.emit(SocketEventName.join, [targetUsername]);
+        targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
         targetClient.on(SocketEventName.joinResult, done);
 
         // another user joins the chat
         const anotherClient = await getClientSocketConnection(server.address);
-        anotherClient.emit(SocketEventName.join, [anotherUsername]);
+        anotherClient.emit(SocketEventName.join, [anotherUsername] as SocketEvent.Join);
         anotherClient.on(SocketEventName.joinResult, done);
         await waitForExpect(() => expect(done).toBeCalledTimes(2));
 
         // wait for event
-        targetClient.on(SocketEventName.disconnect, (eventBody: DisconnectEventBody) => {
+        targetClient.on(SocketEventName.disconnect, (eventBody: SocketEvent.Disconnect) => {
             const [disconnectedUser] = eventBody;
             expect(disconnectedUser.username).toBe(anotherUsername);
             done();

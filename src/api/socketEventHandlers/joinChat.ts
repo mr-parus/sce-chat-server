@@ -1,21 +1,16 @@
-import { SocketEventHandler } from '../../common/types/SocketEventHandler';
-import { SocketEventName } from '../../common/types/SocketEventName';
-import {
-    DisconnectEventBody,
-    JoinEventBody,
-    JoinResultEventBody,
-    NewJoinResponseEventBody,
-} from '../../common/types/SocketEventBody';
-import { saveUserIfNotExists } from '../services/saveUserIfNotExists';
-import { WrongArgumentError } from '../../common/errors/WrongArgumentError';
-import { log } from '../../../utils/logger';
-import { TokenEncoder } from '../../../utils/TokenEncoder';
-import { findUSerById } from '../services/findUserById';
-import { IUser } from '../../common/types/IUser';
+import { SocketEventHandler } from '../common/types/SocketEventHandler';
+import { SocketEventName } from '../common/types/SocketEventName';
+import * as SocketEvent from '../common/types/SocketEvent';
+import { saveUserIfNotExists } from '../modules/users/services/saveUserIfNotExists';
+import { WrongArgumentError } from '../common/errors/WrongArgumentError';
+import { log } from '../../utils/logger';
+import { TokenEncoder } from '../../utils/TokenEncoder';
+import { findUSerById } from '../modules/users/services/findUserById';
+import { IUser } from '../common/types/IUser';
 
 export const joinChat: SocketEventHandler = async (io, socket, eventBody, context) => {
     try {
-        const [providedUsername, providedToken] = eventBody as JoinEventBody;
+        const [providedUsername, providedToken] = eventBody as SocketEvent.Join;
         const { chatRoomId } = context;
 
         // retrieve user from token if provided
@@ -25,7 +20,7 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
             restoredUser = (await findUSerById(userId)) as IUser;
 
             if (!restoredUser) {
-                socket.emit(SocketEventName.joinResult, ['Bad token!']);
+                socket.emit(SocketEventName.joinResult, ['Bad token!'] as SocketEvent.JoinResult);
                 return;
             }
         }
@@ -33,7 +28,9 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
         // verify if there is no online users with the same username
         const username = restoredUser?.username || (providedUsername as string);
         if (context.onlineUserNames.get(username)) {
-            socket.emit(SocketEventName.joinResult, ['A user with such username is already in the chat!']);
+            socket.emit(SocketEventName.joinResult, [
+                'A user with such username is already in the chat!',
+            ] as SocketEvent.JoinResult);
             return;
         }
 
@@ -49,12 +46,12 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
             context.onlineUser2Socket.delete(user.id);
             context.onlineUserNames.delete(user.username);
             context.onlineUsers.delete(user.id);
-            io.in(chatRoomId).emit(SocketEventName.disconnect, [user] as DisconnectEventBody);
+            io.in(chatRoomId).emit(SocketEventName.disconnect, [user] as SocketEvent.Disconnect);
             log.silly(`User with username "%s" disconnected.`, username);
         });
 
         // notify everyone in the room about new user join
-        io.in(chatRoomId).emit(SocketEventName.newJoin, [user] as NewJoinResponseEventBody);
+        io.in(chatRoomId).emit(SocketEventName.newJoin, [user] as SocketEvent.NewJoinResponse);
 
         // add this user to the room
         socket.join(chatRoomId);
@@ -63,17 +60,17 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
         const token = await TokenEncoder.encode(user.id);
 
         // notify user about successful join
-        socket.emit(SocketEventName.joinResult, [0, user, onlineUsers, token] as JoinResultEventBody);
+        socket.emit(SocketEventName.joinResult, [0, user, onlineUsers, token] as SocketEvent.JoinResult);
         log.silly(`User with username "%s" joined the chat.`, username);
     } catch (error) {
         if (error instanceof WrongArgumentError) {
-            socket.emit(SocketEventName.joinResult, [error.reason] as JoinResultEventBody);
+            socket.emit(SocketEventName.joinResult, [error.reason] as SocketEvent.JoinResult);
             return;
         }
 
         log.error(error);
         if (socket?.connected) {
-            socket.emit(SocketEventName.sendMessageResult, ['Unexpected error.']);
+            socket.emit(SocketEventName.sendMessageResult, ['Unexpected error.'] as SocketEvent.JoinResult);
         }
     }
 };

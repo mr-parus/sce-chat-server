@@ -2,7 +2,7 @@ import { config } from './config';
 import { log } from './utils/logger';
 import { Server } from './server/Server';
 import { connect as connectToMongoDB } from './utils/mongo';
-import { socketEventHandlers } from './api/users/socketEventHandlers';
+import { socketEventHandlers } from './api/socketEventHandlers';
 
 process.on('unhandledRejection', (err: Error) => {
     log.error('unhandledRejection: %s', err.message);

@@ -17,7 +17,7 @@ mongoose.connection.on('reconnected', () => log.debug('Reconnected to MongoDB: %
 
 export const connect = async (): Promise<mongoose.Mongoose> => {
     try {
-        new Promise((res) => waitPort({ host, port, timeout: 5000 }).then(res));
+        new Promise((res) => waitPort({ host, port, timeout: 5000, output: 'silent' }).then(res));
 
         const connection = await mongoose.connect(connectURI, {
             autoIndex: true,
