@@ -26,7 +26,8 @@ export const joinChat: SocketEventHandler = async (io, socket, eventBody, contex
         }
 
         // verify if there is no online users with the same username
-        const username = restoredUser?.username || (providedUsername as string);
+        let username = restoredUser?.username || (providedUsername as string);
+        username = username.trim();
         if (context.onlineUserNames.get(username)) {
             socket.emit(SocketEventName.joinResult, [
                 'A user with such username is already in the chat!',
