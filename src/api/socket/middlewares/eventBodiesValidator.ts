@@ -1,8 +1,8 @@
 import { SocketMiddleware } from '../../modules/common/types/SocketMiddleware';
 import { SocketContext } from '../../modules/common/types/SocketContext';
 import { log } from '../../../utils/logger';
-import { socketEventBodiesValidators } from '../eventHandlers';
 import { SocketEventName } from '../../modules/common/types/SocketEventName';
+import { socketEventBodiesValidators } from '../eventHandlers';
 
 export const eventBodiesValidator: SocketMiddleware<SocketContext> = (io, socket /*context*/) => {
     return (packet, next): void => {
@@ -21,14 +21,19 @@ export const eventBodiesValidator: SocketMiddleware<SocketContext> = (io, socket
             return;
         }
 
-        // const validator = socketEventBodiesValidators[eventName];
-        // if (validator) {
-        //     const { error } = validator.validate(packet[1]);
-        //     if (error) {
-        //         log.error('Unexpected event body: %o. Requester data: %o', eventBody, socket.handshake);
-        //         socket.disconnect();
-        //     }
-        // }
+        const validator = socketEventBodiesValidators[eventName];
+        if (validator) {
+            const { error } = validator.validate(packet[1]);
+            if (error) {
+                log.error(
+                    'Unexpected event body: %o. Error: %o. Requester data: %o',
+                    eventBody,
+                    error,
+                    socket.handshake
+                );
+                socket.disconnect();
+            }
+        }
         next();
     };
 };
