@@ -44,6 +44,10 @@ export class Server {
         // todo: add security restrictions
         app.use(cors());
 
+        app.use(async (ctx) => {
+            ctx.body = 'https://github.com/mr-parus/sce-chat-server deployed here';
+        });
+
         app.on('error', (err) => log.error('Error occurred: %s', err.message));
 
         return app;
