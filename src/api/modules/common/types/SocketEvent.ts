@@ -7,7 +7,6 @@ type Token = string;
 
 // Incoming messages
 export type GetMessages = [IUser['id'], Token];
-export type IncomingEvent = Join | SendMessage | GetMessages;
 export type Join = JoinByToken | JoinByUsername;
 export type JoinByToken = [null, Token];
 export type JoinByUsername = [IUser['username']];

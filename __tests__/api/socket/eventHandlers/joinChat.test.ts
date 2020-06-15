@@ -5,6 +5,7 @@ import waitForExpect from 'wait-for-expect';
 import * as SocketEvent from '../../../../src/api/modules/common/types/SocketEvent';
 import { config } from '../../../../src/config';
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
+import { ContextCreator } from '../../../../src/api/socket/ContextCreator';
 import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
 import { IUser } from '../../../../src/api/modules/common/types/IUser';
 import { Message } from '../../../../src/api/modules/messages/models/Message';
@@ -12,6 +13,7 @@ import { saveUserIfNotExists } from '../../../../src/api/modules/users/services/
 import { Server } from '../../../../src/server/Server';
 import { socketEventHandlers } from '../../../../src/api/socket/eventHandlers';
 import { SocketEventName } from '../../../../src/api/modules/common/types/SocketEventName';
+import { socketMiddlewares } from '../../../../src/api/socket/middlewares';
 import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
 import { User } from '../../../../src/api/modules/users/models/User';
 
@@ -32,7 +34,11 @@ describe('joinChat (socket event handler)', () => {
         mongoConnection = await connectToMongoDB();
 
         server = Server.ofConfig(config);
-        server.socketEventHandlers = socketEventHandlers;
+        server.initSocket({
+            eventHandlers: socketEventHandlers,
+            middlewares: socketMiddlewares,
+            contextCreator: ContextCreator.create,
+        });
         await server.listen();
 
         targetUser = await saveUserIfNotExists({ username: targetUsername });
@@ -152,20 +158,25 @@ describe('joinChat (socket event handler)', () => {
     it('should deny if user with such username is already connected', async () => {
         expect(targetClient.connected).toEqual(true);
 
+        const done = jest.fn();
+
         // another user joins the chat
         const anotherClient = await getClientSocketConnection(server.address);
         anotherClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
+        anotherClient.on(SocketEventName.joinResult, done);
+        await waitForExpect(() => expect(done).toBeCalledTimes(1));
 
         // target user joins the chat with the same username
         targetClient.emit(SocketEventName.join, [targetUsername] as SocketEvent.Join);
 
         // wait for event
-        const done = jest.fn();
         targetClient.on(SocketEventName.joinResult, (eventBody: SocketEvent.JoinResult) => {
             const [errorMessage] = eventBody;
             expect(errorMessage).toContain('A user with such username is already in the chat!');
             done();
         });
+
+        done.mockReset();
         await waitForExpect(() => expect(done).toBeCalledTimes(1));
         await anotherClient.disconnect();
     });

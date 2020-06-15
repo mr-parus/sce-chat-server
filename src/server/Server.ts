@@ -1,7 +1,6 @@
 import cors from '@koa/cors';
 import http from 'http';
 import Koa from 'koa';
-import sioWildcard from 'socketio-wildcard';
 import SocketIO from 'socket.io';
 import { AddressInfo } from 'net';
 import { promisify } from 'util';
@@ -9,21 +8,14 @@ import { promisify } from 'util';
 import { Config } from 'convict';
 import { ConfigSchema } from '../config';
 import { log } from '../utils/logger';
-import { SocketContext } from '../api/modules/common/types/SocketContext';
 import { SocketEventHandler } from '../api/modules/common/types/SocketEventHandler';
 import { SocketEventName } from '../api/modules/common/types/SocketEventName';
+import { SocketMiddleware } from '../api/modules/common/types/SocketMiddleware';
 
 export class Server {
-    private _socketEventHandlers: { [key in SocketEventName]?: SocketEventHandler } = {};
     private readonly _app: Koa;
     private readonly _io: SocketIO.Server;
     private readonly _server: http.Server;
-    private readonly _socketContext: SocketContext = {
-        chatRoomId: 'cool_chat', // all new connections should be at the same room
-        onlineUser2Socket: new Map(),
-        onlineUserNames: new Map(),
-        onlineUsers: new Map(),
-    };
 
     constructor(public readonly serverPort: number) {
         this._app = Server.createApp();
@@ -33,15 +25,10 @@ export class Server {
 
         this._io = Server.createSocket();
         this._io.attach(this._server);
-        this.initSocket();
     }
 
     get address(): AddressInfo {
         return this._server.address() as AddressInfo;
-    }
-
-    set socketEventHandlers(eventHandlers: { [key in SocketEventName]?: SocketEventHandler }) {
-        this._socketEventHandlers = Object.freeze(eventHandlers);
     }
 
     //
@@ -70,37 +57,43 @@ export class Server {
 
     static createSocket(): SocketIO.Server {
         // todo: add security restrictions
-        const io = SocketIO({ origins: '*:*' });
-        io.use(sioWildcard());
-        return io;
+        return SocketIO({ origins: '*:*' });
     }
 
     //
 
-    public initSocket(): void {
-        if (!Object.keys(this._socketEventHandlers).length) log.warn('No socket event handlers provided!');
+    public initSocket<ContextType>({
+        contextCreator,
+        eventHandlers,
+        middlewares = [],
+    }: {
+        contextCreator: () => ContextType;
+        eventHandlers?: { [key in SocketEventName]?: SocketEventHandler<ContextType> };
+        middlewares?: SocketMiddleware<ContextType>[];
+    }): void {
+        const socketEventHandlers = Object.freeze(eventHandlers || {});
+        if (!Object.keys(socketEventHandlers).length) log.warn('No socket event handlers provided!');
 
-        this._io.on('connect', (socket) => {
+        if (!middlewares.length) log.warn('No socket middlewares provided!');
+
+        const context: ContextType = contextCreator();
+
+        this._io.on('connection', (socket) => {
             log.silly('New socket connection! (id=%s)', socket.id);
 
-            socket.on('*', (packet) => {
-                log.silly('Socket event: %s', JSON.stringify(packet));
-                const [eventName, eventPayload] = packet.data;
-                const handler: SocketEventHandler | undefined = this._socketEventHandlers[eventName as SocketEventName];
+            // set up socket middlewares
+            middlewares.forEach((middleware) => {
+                socket.use(middleware(this._io, socket, context));
+            });
 
-                if (!handler) {
-                    // Let's consider all events which do not meet our schema as 'suspicious'.
-                    // All data should be logged for farther analysis.
-                    log.error('Unexpected event: "%s". Requester data: %o', eventName, socket.handshake);
+            // set up socket event handlers
+            Object.entries(socketEventHandlers).forEach(([eventName, eventHandler]) => {
+                if (!eventHandler) return;
 
-                    // It's better to disconnect such connections
-                    socket.disconnect();
-                    return;
-                }
-
-                // todo: add eventPayload validations
-                handler(this._io, socket, eventPayload, this._socketContext).catch((err) => {
-                    log.error(`Error while handling socket event "%s": %s`, eventName, err);
+                socket.on(eventName, (eventBody) => {
+                    eventHandler(this._io, socket, eventBody, context).catch((err: Error) => {
+                        log.error(`Error while handling socket event "%s": %s`, eventName, err);
+                    });
                 });
             });
         });

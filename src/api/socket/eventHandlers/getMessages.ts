@@ -6,8 +6,9 @@ import { SocketEventHandler } from '../../modules/common/types/SocketEventHandle
 import { SocketEventName } from '../../modules/common/types/SocketEventName';
 import { TokenEncoder } from '../../../utils/TokenEncoder';
 import { WrongArgumentError } from '../../modules/common/errors/WrongArgumentError';
+import { SocketContext } from '../../modules/common/types/SocketContext';
 
-export const getMessages: SocketEventHandler = async (io, socket, eventBody /*context*/) => {
+export const getMessages: SocketEventHandler<SocketContext> = async (io, socket, eventBody /*context*/) => {
     const [targetUserId, token] = eventBody as SocketEvent.GetMessages;
     try {
         if (!token) {

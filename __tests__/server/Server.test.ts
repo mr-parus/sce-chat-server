@@ -5,6 +5,8 @@ import { config } from '../../src/config';
 import { getClientSocketConnection } from '../../src/utils/getClientSocketConnection';
 import { log } from '../../src/utils/logger';
 import { Server } from '../../src/server/Server';
+import { socketMiddlewares } from '../../src/api/socket/middlewares';
+import { ContextCreator } from '../../src/api/socket/ContextCreator';
 
 describe('Server', () => {
     let server: Server;
@@ -12,6 +14,10 @@ describe('Server', () => {
 
     beforeAll(async () => {
         server = Server.ofConfig(config);
+        server.initSocket({
+            middlewares: socketMiddlewares,
+            contextCreator: ContextCreator.create,
+        });
         await server.listen();
     });
 

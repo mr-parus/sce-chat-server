@@ -6,6 +6,7 @@ import { v4 as uuidV4 } from 'uuid';
 import * as SocketEvent from '../../../../src/api/modules/common/types/SocketEvent';
 import { config } from '../../../../src/config';
 import { connect as connectToMongoDB } from '../../../../src/utils/mongo';
+import { ContextCreator } from '../../../../src/api/socket/ContextCreator';
 import { getClientSocketConnection } from '../../../../src/utils/getClientSocketConnection';
 import { IUser } from '../../../../src/api/modules/common/types/IUser';
 import { Message } from '../../../../src/api/modules/messages/models/Message';
@@ -14,6 +15,7 @@ import { saveUserIfNotExists } from '../../../../src/api/modules/users/services/
 import { Server } from '../../../../src/server/Server';
 import { socketEventHandlers } from '../../../../src/api/socket/eventHandlers';
 import { SocketEventName } from '../../../../src/api/modules/common/types/SocketEventName';
+import { socketMiddlewares } from '../../../../src/api/socket/middlewares';
 import { TokenEncoder } from '../../../../src/utils/TokenEncoder';
 import { User } from '../../../../src/api/modules/users/models/User';
 
@@ -35,7 +37,11 @@ describe('sendMessage (socket event handler)', () => {
     beforeAll(async () => {
         mongoConnection = await connectToMongoDB();
         server = Server.ofConfig(config);
-        server.socketEventHandlers = socketEventHandlers;
+        server.initSocket({
+            eventHandlers: socketEventHandlers,
+            middlewares: socketMiddlewares,
+            contextCreator: ContextCreator.create,
+        });
         await server.listen();
 
         [user1, user2] = await Promise.all([
