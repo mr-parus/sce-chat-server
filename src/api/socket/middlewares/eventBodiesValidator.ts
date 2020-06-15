@@ -21,14 +21,14 @@ export const eventBodiesValidator: SocketMiddleware<SocketContext> = (io, socket
             return;
         }
 
-        const validator = socketEventBodiesValidators[eventName];
-        if (validator) {
-            const { error } = validator.validate(packet[1]);
-            if (error) {
-                log.error('Unexpected event body: %o. Requester data: %o', eventBody, socket.handshake);
-                socket.disconnect();
-            }
-        }
+        // const validator = socketEventBodiesValidators[eventName];
+        // if (validator) {
+        //     const { error } = validator.validate(packet[1]);
+        //     if (error) {
+        //         log.error('Unexpected event body: %o. Requester data: %o', eventBody, socket.handshake);
+        //         socket.disconnect();
+        //     }
+        // }
         next();
     };
 };
