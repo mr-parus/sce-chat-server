@@ -40,7 +40,7 @@ Simple, websocket based chat.
 * ❌ SSL
 
 ## Socket API
-###Supported Events
+### Supported Events
 * [Event Names](src/api/modules/common/types/SocketEventName.ts)
 * [Messages Schema](src/api/modules/common/types/SocketEvent.ts)
 
