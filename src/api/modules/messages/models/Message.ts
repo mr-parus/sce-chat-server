@@ -26,5 +26,5 @@ schema.set('toObject', {
     transform: (doc, ret) => ({ ..._.omit(ret, ['__v', '_id']), id: ret._id.toString() }),
 });
 
-const collectionName = process.env.NODE_ENV === 'test' ? 'messages.test' : 'messages';
-export const Message = mongoose.model(collectionName, schema);
+
+export const Message = mongoose.model('messages', schema);
