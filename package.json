@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
-    "convict": "^6.0.0",
+    "convict": "^6.2.2",
     "dotenv": "^8.2.0",
     "jsonwebtoken": "^8.5.1",
     "kcors": "^2.2.2",
